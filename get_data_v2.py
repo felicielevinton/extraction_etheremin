@@ -5,7 +5,6 @@ import glob
 import warnings
 from copy import deepcopy
 import json
-from experiment_type import *
 from extraction_utils import *
 
 

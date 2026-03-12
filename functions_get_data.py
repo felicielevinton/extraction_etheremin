@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from ExtractRecordings.manual.simple_sort import*
 import pandas as pd
 from PostProcessing.tools.utils import *
-from tonotopy import *
 from matplotlib.colors import ListedColormap, Normalize
 from format_data import *
 from skimage import measure

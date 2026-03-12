@@ -9,7 +9,7 @@ from copy import deepcopy
 import json
 
 
-ANALOG_TRIGGERS_MAPPING = {"Main": 0, "Playback": 1}
+ANALOG_TRIGGERS_MAPPING = {"Main": 0, "Playback": 1}# tracking 0, playback 2, mock 3
 DIGITAL_TRIGGERS_MAPPING = {"Basler": 0, "Sounds": 1}
 
 

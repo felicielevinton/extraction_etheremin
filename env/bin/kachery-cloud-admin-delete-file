@@ -1,8 +1,0 @@
-#!/mnt/working2/felicie/Python_theremin/Analyse/Analyse/env/bin/python
-# -*- coding: utf-8 -*-
-import re
-import sys
-from kachery_cloud.cli import admin_delete_file
-if __name__ == '__main__':
-    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-    sys.exit(admin_delete_file())

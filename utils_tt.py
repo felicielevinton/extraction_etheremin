@@ -9,15 +9,13 @@ from PostProcessing.tools.utils import *
 import csv
 from format_data import *
 import pandas as pd
-from create_data import *
+#from create_data import *
 import os
 import glob
 import scipy.io
-from delta_frequency import *
 import math
 from utils import *
 from format_data import get_sem
-from convert_positions_in_tones import *
 import re
 import json
 import pickle
@@ -549,7 +547,7 @@ def create_tt(path) :
     
     # get triggers
     triggers_tr, tones_total_tr = get_triggers(path+'headstage_0/', analog_line=0)
-    triggers_pb, tones_total_pb = get_triggers(path+'headstage_0/', analog_line=1)
+    triggers_pb, tones_total_pb = get_triggers(path+'headstage_0/', analog_line=2)   # c'est ligne 1 normalement mais 2 pour Hercule
     triggers_mck, tones_total_mck = get_triggers(path+'headstage_0/', analog_line=3)
         
     condition_tr = np.zeros(len(triggers_tr))
@@ -753,9 +751,10 @@ def create_data_features_new_version(path, bin_width, fs, mock=True):
         clusters[cluster].append(value)
 
     ##NEURO
+    n_clus = np.max(list(spk_clusters))
     t_spk, c_spk = [], [] #spike times, cluster
     #for cluster in range(spike.get_n_clusters()):
-    for cluster in range(32):
+    for cluster in range(n_clus+1):
         t_spk.append(clusters[cluster]) #spikes times
         c_spk.append(np.full_like(t_spk[cluster], cluster))
     t_spk = np.hstack(t_spk)
@@ -797,10 +796,11 @@ def create_data_features_new_version(path, bin_width, fs, mock=True):
         
     
     t_stim = np.array(tt['triggers'])/fs
-    f_stim = tt['tones']
+    f_stim = np.array(tt['tones'])
     type_stim = tt['condition']
     #block = [int(block[-1]) for block in tt['block']]
-    block = [int(block.split('_0')[1]) for block in tt['block']]
+    #block = [int(block.split('_0')[1]) for block in tt['block']]
+    block = [int(block.split('_')[-1]) for block in tt['block']]
     if mock:
         t_mock = np.array(tt['mock_triggers'])/fs
         f_mock = tt['mock_tones'] 
@@ -816,9 +816,6 @@ def create_data_features_new_version(path, bin_width, fs, mock=True):
     
     unique_tones = sorted(np.unique(f_stim))
     
-    print(f"Shape of t_stim: {t_stim.shape}")
-    print(f"Shape of f_stim: {f_stim.shape}")
-    print(f"Shape of bins: {bins.shape}")
     
     # Attention on a envie que t_stim et f_stim soient de la même longueur
     if len(t_stim)>len(f_stim):
@@ -855,9 +852,8 @@ def create_data_features_new_version(path, bin_width, fs, mock=True):
         # Check if any stimuli fall within the current bin
         stimuli_in_bin = (t_stim >= bin_start) & (t_stim < bin_end)
         
-        print(f"stimuli_in_bin indices: {np.where(stimuli_in_bin)}")
-        print(f"f_stim values in bin {i}: {f_stim[stimuli_in_bin]}")
         if np.any(stimuli_in_bin):
+            print(stimuli_in_bin)
             # If stimuli are present, set stimulus_presence to True for this bin
             stimulus_presence[i] = True
 
@@ -953,7 +949,237 @@ def create_data_features_new_version(path, bin_width, fs, mock=True):
         
     
     
+def create_data_features_new_version_spike_sorted(path, bin_width, fs, mock=True):
+ 
+    spk_clusters = np.load(path+'/spike_sorting/ss_spike_clusters.npy', allow_pickle=True)
+    spk_times = np.load(path+'/spike_sorting/ss_spike_times.npy', allow_pickle=True)
 
+    # je ne garde que les channels qui ont un cluster 0 (il faut bien du bruit ???)
+    channels_with_cluster0 = np.unique(
+        spk_clusters[spk_clusters[:, 1] == 0, 0]
+    )
+
+        # -----------------------------------
+    mask_channels = np.isin(spk_clusters[:, 0], channels_with_cluster0)
+    spk_clusters = spk_clusters[mask_channels]
+    spk_times = spk_times[mask_channels]
+
+    # -----------------------------------
+    # 3️⃣ Retirer le cluster 0 (bruit)
+    # -----------------------------------
+    mask_not_noise = spk_clusters[:, 1] != 0
+    spk_clusters = spk_clusters[mask_not_noise]
+    spk_times = spk_times[mask_not_noise]
+
+
+    # Retirer les clusters 0 de chaque channel -- cluster 0 c'est du bruit sur wave_clus --
+    #mask = spk_clusters[:, 1] != 0
+    #spk_clusters = spk_clusters[mask]
+    #spk_times = spk_times[mask]
+    ##
+
+
+
+    
+    spk_clusters = np.array([int(f"{int(a)}{int(b)}") for a, b in spk_clusters])
+    clusters = {}
+    for value, cluster in zip(spk_times, spk_clusters):
+        if cluster not in clusters:
+            clusters[cluster] = []
+        clusters[cluster].append(value)
+
+    ##NEURO
+    n_clus = np.max(list(spk_clusters))
+    t_spk, c_spk = [], []
+    for cluster in clusters.keys():  # seulement les clusters existants
+        t_spk.append(np.array(clusters[cluster]))
+        c_spk.append(np.full_like(clusters[cluster], cluster))
+    t_spk = np.hstack(t_spk)
+    c_spk = np.hstack(c_spk)
+
+    # mettre en secondes
+    t_spk = t_spk /1000 # ce qui sort de waveclus est en ms
+
+
+    ## faire les bins : 
+    min_value = t_spk.min()  # Get the minimum value of 'spike_time'
+    max_value = t_spk.max()  # Get the maximum value of 'spike_time'
+
+    bins = np.arange(min_value, max_value + bin_width, bin_width)  # Define custom bin edges
+
+    ## histogramme par cluster
+    unique_clusters = np.unique(c_spk)
+
+    histograms_per_cluster = {}
+
+    for cluster in unique_clusters:
+        spike_times_cluster = [time for time, clus in zip(t_spk, c_spk) if clus == cluster]
+        # Now spike_times_cluster contains spike times for the current cluster
+        
+        # Perform histogram for the current cluster
+        hist, bin_edges = np.histogram(spike_times_cluster, bins=bins)
+        histograms_per_cluster[cluster] = (hist, bin_edges)
+
+    data = [histograms_per_cluster[key][0] for key in histograms_per_cluster]
+    np.save(path+f'/spike_sorting/data_{bin_width}.npy', data)
+    np.save(path+f'/spike_sorting/unique_clusters_{bin_width}.npy', unique_clusters)
+
+    #### TRIGGERS
+    tt_path = path+'/tt.pkl'
+    with open(tt_path, 'rb') as file:
+        tt = pickle.load(file)
+        
+    
+    t_stim = np.array(tt['triggers'])/fs
+    f_stim = np.array(tt['tones'])
+    type_stim = tt['condition']
+    #block = [int(block[-1]) for block in tt['block']]
+    #block = [int(block.split('_0')[1]) for block in tt['block']]
+    block = [int(block.split('_')[-1]) for block in tt['block']]
+    if mock:
+        t_mock = np.array(tt['mock_triggers'])/fs
+        f_mock = tt['mock_tones'] 
+    
+    #attention
+    t_stim = np.array(t_stim, dtype=float)
+    type_stim = np.array(type_stim, dtype=float)
+    block = np.array(block, dtype=float)
+    if mock : 
+        t_mock = np.array(t_mock, dtype=float)
+    
+    
+    
+    unique_tones = sorted(np.unique(f_stim))
+    
+    
+    # Attention on a envie que t_stim et f_stim soient de la même longueur
+    if len(t_stim)>len(f_stim):
+        t_stim = t_stim[:len(f_stim)]
+        type_stim = type_stim[:len(f_stim)]
+        block = block[:len(f_stim)]
+        type_stim = type_stim[:len(f_stim)]
+        #print(f" ATTENTION Shape of t_stim: {t_stim.shape}")
+        #print(f"ATTENTION Shape of f_stim: {f_stim.shape}")
+    elif len(f_stim)>len(t_stim):
+        f_stim = f_stim[:len(t_stim)]
+        type_stim = type_stim[:len(t_stim)]
+        block = block[:len(t_stim)]
+        type_stim = type_stim[:len(t_stim)]
+        
+        #print(f" ATTENTION Shape of t_stim: {t_stim.shape}")
+        #print(f"ATTENTION Shape of f_stim: {f_stim.shape}")
+
+
+    #need to interpolate between two stims to get the frequency in between
+    # 1. True stims
+    stimulus_presence = np.zeros(len(bins) - 1, dtype=bool)
+    interpolated_freq = np.zeros(len(bins) - 1)
+    interpolated_type_stim = np.zeros(len(bins) - 1)
+    interpolated_block_stim = np.zeros(len(bins) - 1)
+    previous_frequency = None
+    previous_condition = None
+    previous_block = None
+
+    for i in range(len(bins) - 1):
+        bin_start = bins[i]
+        bin_end = bins[i + 1]
+
+        # Check if any stimuli fall within the current bin
+        stimuli_in_bin = (t_stim >= bin_start) & (t_stim < bin_end)
+        
+        if np.any(stimuli_in_bin):
+            # If stimuli are present, set stimulus_presence to True for this bin
+            stimulus_presence[i] = True
+
+            # Calculate the frequency associated with the bin (assuming frequency remains constant within the bin)
+            # You can simply take the frequency of the first stimulus within the bin
+            interpolated_freq[i] = f_stim[stimuli_in_bin][0]
+            interpolated_type_stim[i] = type_stim[stimuli_in_bin][0]
+            interpolated_block_stim[i] = block[stimuli_in_bin][0]
+
+
+            previous_frequency = interpolated_freq[i]  # Update previous frequency
+            previous_condition = interpolated_type_stim[i]
+            previous_block = interpolated_block_stim[i]
+
+            
+        else:
+            # If no stimulus in the bin, set bin_frequencies to the previous frequency
+            if previous_frequency is not None:
+                interpolated_freq[i] = previous_frequency
+                interpolated_type_stim[i] = previous_condition
+                interpolated_block_stim[i] = previous_block
+                
+    #interpolated_type_stim = np.interp(bins, t_stim, type_stim)
+    #interpolated_block_stim = np.interp(bins, t_stim, block)
+    
+    
+      # 2. Mock stims
+    if mock:
+        mock_stimulus_presence = np.zeros(len(bins) - 1, dtype=bool)
+        interpolated_mock_freq = np.zeros(len(bins) - 1)
+
+        previous_frequency = None
+        for i in range(len(bins) - 1):
+            bin_start = bins[i]
+            bin_end = bins[i + 1]
+
+            # Check if any stimuli fall within the current bin
+            mock_in_bin = (t_mock >= bin_start) & (t_mock < bin_end)
+            
+            if np.any(mock_in_bin):
+                # If stimuli are present, set stimulus_presence to True for this bin
+                mock_stimulus_presence[i] = True
+
+                # Calculate the frequency associated with the bin (assuming frequency remains constant within the bin)
+                # You can simply take the frequency of the first stimulus within the bin
+                interpolated_mock_freq[i] = f_mock[mock_in_bin][0]
+                previous_frequency = interpolated_mock_freq[i]  # Update previous frequency
+            else:
+                # If no stimulus in the bin, set bin_frequencies to the previous frequency
+                if previous_frequency is not None:
+                    interpolated_mock_freq[i] = previous_frequency
+
+
+
+        # Create a dictionary to store information for each time bin
+        features = {}
+        for i, bin in enumerate(bins[:-1]):
+            features[bin] = {
+                'Played_frequency': interpolated_freq[i],
+                'Condition': interpolated_type_stim[i],
+                'Block' : interpolated_block_stim[i],
+                'Frequency_changes': stimulus_presence[i],
+                'Mock_frequency': interpolated_mock_freq[i],
+                'Mock_change' : mock_stimulus_presence[i]
+                
+            }
+    else:
+        features = {}
+        for i, bin in enumerate(bins[:-1]):
+            features[bin] = {
+                'Played_frequency': interpolated_freq[i],
+                'Condition': interpolated_type_stim[i],
+                'Block' : interpolated_block_stim[i],
+                'Frequency_changes': stimulus_presence[i]
+            }      
+        
+        
+        
+    features = list(features.values())
+    np.save(path+f'/spike_sorting/features_{bin_width}.npy', features)
+    
+    np.save(path+'/unique_tones.npy', unique_tones)
+
+    #with open(path+'/features.json', 'w') as json_file:
+        #json.dump(features, json_file)   
+        
+    print(f"Shape of t_stim: {t_stim.shape}")
+    print(f"Shape of f_stim: {f_stim.shape}")
+    print(f"Shape of bins: {bins.shape}")
+    print('all izz well')
+        
+    
 
 def create_data_features_mock(path, bin_width, fs, mock=True):
     

@@ -6,16 +6,13 @@ from get_data import *
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from utils_tonotopy import *
 from load_rhd import *
 from quick_extract import *
 from get_data import *
-import PostProcessing.tools.heatmap as hm
 from get_data import *
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from tonotopy import *
 import shutil
 
 ##### Fonctions pour extraire les données neuronales ######

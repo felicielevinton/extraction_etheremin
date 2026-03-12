@@ -6,7 +6,6 @@ from get_data import *
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from tonotopy import *
 
 import spikeinterface.full as si
 #import spikeinterface.core as si

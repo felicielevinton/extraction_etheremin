@@ -1,15 +1,12 @@
 
-import PostProcessing.tools.heatmap as hm
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
 from load_rhd import *
 from quick_extract import *
-import PostProcessing.tools.heatmap as hm
 from get_data import *
 import numpy as np
 import matplotlib.pyplot as plt
-from tonotopy import *
 import shutil
 
 
