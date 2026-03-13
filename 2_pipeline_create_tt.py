@@ -11,7 +11,7 @@ bin_width = 0.005
 psth_bins = np.arange(-t_pre, t_post + bin_width, bin_width)
 
 #path = '/auto/data2/eTheremin/ALTAI/ALTAI_20240726_SESSION_01/'
-path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260312_SESSION_01/'
+path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260313_SESSION_00/'
 #path = '/auto/data2/eTheremin/ALTAI/ALTAI_20240822_SESSION_00/'
 #session = 'ALTAI_20240809_SESSION_00'
 #path = '/Volumes/data2/eTheremin/ALTAI/'+ session + '/'

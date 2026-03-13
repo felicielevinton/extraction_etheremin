@@ -23,7 +23,7 @@ save_base_path = base_data_path
 fs = 30e3
 t_pre = 0.2
 t_post = 0.5
-bin_width = 0.005
+bin_width = 0.02
 freq_min = 3
 mock = True
 

@@ -7,7 +7,7 @@ from ExtractRecordings.manual.simple_sort import*
 import pandas as pd
 from PostProcessing.tools.utils import *
 from matplotlib.colors import ListedColormap, Normalize
-from format_data import *
+#from format_data import *
 from skimage import measure
 import matplotlib.colors as colors
 from scipy.signal import find_peaks
@@ -23,7 +23,7 @@ n_headstages = 2 # nombre de headstages utilisés pendant la manip
 #Fichier python pour pouvoir utiliser byobu pour faire tourner l'extraction en arrière plan 
 
 #pour oscypek : /mnt/working2/felicie/data2/eTheremin/OSCYPEK/OSCYPEK
-path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260312_SESSION_01/'
+path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260313_SESSION_00/'
 
 extract_from_rhd(path, sampling_rate=sr, n_headstages=n_headstages, channels_to_remove=None)
 

@@ -7,7 +7,6 @@ from ExtractRecordings.manual.simple_sort import*
 import pandas as pd
 from PostProcessing.tools.utils import *
 from matplotlib.colors import ListedColormap, Normalize
-from format_data import *
 from skimage import measure
 import matplotlib.colors as colors
 from scipy.signal import find_peaks
