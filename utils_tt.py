@@ -7,7 +7,6 @@ from ExtractRecordings.manual.simple_sort import*
 import pandas as pd
 from PostProcessing.tools.utils import *
 import csv
-from format_data import *
 import pandas as pd
 #from create_data import *
 import os
@@ -15,7 +14,6 @@ import glob
 import scipy.io
 import math
 from utils import *
-from format_data import get_sem
 import re
 import json
 import pickle

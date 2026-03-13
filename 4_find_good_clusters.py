@@ -102,7 +102,7 @@ def check_responsiveness(triggers, spikes, path, clusters=None, tag=None):
 
 
 #### ici ca commence 
-path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260312_SESSION_01/headstage_0/' #  relance
+path = '/auto/data6/eTheremin/SKIEUR/SKIEUR_20260312_SESSION_01/headstage_1/' #  relance
 
 
 

@@ -23,7 +23,7 @@ save_base_path = base_data_path
 fs = 30e3
 t_pre = 0.2
 t_post = 0.5
-bin_width = 0.02
+bin_width = 0.005
 freq_min = 3
 mock = True
 
@@ -60,7 +60,7 @@ def get_sessions(sheet_name, sheet_id, session_filter=None):
 
 sessions = []
 for sheet_name, sheet_id in sheet_ids.items():
-    sessions.extend(get_sessions(sheet_name, sheet_id, session_filter=['silent']))
+    sessions.extend(get_sessions(sheet_name, sheet_id, session_filter=['playback']))
 
 
 for session in sessions:

@@ -2,7 +2,6 @@ from functions_get_data import *
 import numpy as np
 from utils_extraction import get_session_type_final
 from utils_tt import *
-from spike_sorting import *
 
 # ARGUMENTS
 sr = 30e3
